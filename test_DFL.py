@@ -46,7 +46,7 @@ def get_part_location(lmrks):
 if __name__ == '__main__':
     opt = TestOptions().parse()
 
-    opt.gpu_ids = [] # gpu id. if use cpu, set opt.gpu_ids = []
+    opt.gpu_ids = [0] # gpu id. if use cpu, set opt.gpu_ids = []
     WorkingDir = opt.working_dir
     #OutputPath = opt.results_dir
     InputPath = os.path.join(WorkingDir,'aligned')
@@ -56,15 +56,17 @@ if __name__ == '__main__':
     model = create_model(opt)
     model.setup(opt)
     
-    total = 0
+    counter = 0
     # for i, ImgPath in enumerate(pathex.get_image_paths(InputPath, return_Path_class=True)):
     ImgPaths = make_dataset(InputPath)
     for i, ImgPath in enumerate(ImgPaths):
+        counter += 1
+        ProgressStr = '[{}/{}]'.format(counter, len(ImgPaths))
         ImgName = os.path.split(ImgPath)[-1]
-        if os.path.isfile(os.path.join(OutputPath,ImgName)):
-            print('Skipping {}'.format(ImgName))
+        if os.path.isfile(os.path.join(OutputPath, ImgName)):
+            print('{} Skipping {}'.format(ProgressStr, ImgName))
             continue
-        print('Restoring {}'.format(ImgName))
+        print('{} Restoring {}'.format(ProgressStr, ImgName))
         torch.cuda.empty_cache()
         
         InputDflImg = DFLJPG.load(ImgPath)
@@ -76,7 +78,7 @@ if __name__ == '__main__':
         
         # scale landmarks and xseg polys to output image size
         scale_factor = OUT_RES / InputDflImg.get_shape()[0]
-        print('Scale factor: {}'.format(scale_factor))
+        # print('Scale factor: {}'.format(scale_factor))
         Landmarks = Landmarks * scale_factor
         if InputDflImg.has_seg_ie_polys():
             xseg_polys = InputDflImg.get_seg_ie_polys()
@@ -87,7 +89,7 @@ if __name__ == '__main__':
         A = Image.open(ImgPath).convert('RGB')
         
         if Part_locations == 0:
-            print('\t################ Error in landmark file, continue...')
+            print('\t################ Error in landmarks, continue...')
             continue
         C = A
         A = A.resize((OUT_RES, OUT_RES), Image.BICUBIC)
@@ -98,7 +100,6 @@ if __name__ == '__main__':
         
         data = {'A':A.unsqueeze(0), 'C':C.unsqueeze(0), 'A_paths': ImgPath,'Part_locations': Part_locations}
 
-        total =+ 1
         model.set_input(data)
         try:
             model.test()
