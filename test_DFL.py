@@ -47,7 +47,7 @@ if __name__ == '__main__':
     opt = TestOptions().parse()
 
     opt.gpu_ids = [] # gpu id. if use cpu, set opt.gpu_ids = []
-    WorkingDir = opt.test_path
+    WorkingDir = opt.working_dir
     #OutputPath = opt.results_dir
     InputPath = os.path.join(WorkingDir,'aligned')
     OutputPath = os.path.join(WorkingDir,'aligned_dfdn')
@@ -61,6 +61,9 @@ if __name__ == '__main__':
     ImgPaths = make_dataset(InputPath)
     for i, ImgPath in enumerate(ImgPaths):
         ImgName = os.path.split(ImgPath)[-1]
+        if os.path.isfile(os.path.join(OutputPath,ImgName)):
+            print('Skipping {}'.format(ImgName))
+            continue
         print('Restoring {}'.format(ImgName))
         torch.cuda.empty_cache()
         

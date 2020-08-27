@@ -292,7 +292,7 @@ class StyledUpBlock(nn.Module):
         super().__init__()
         if upsample:
             self.conv1 = nn.Sequential(
-                nn.Upsample(scale_factor=2, mode='bilinear'),
+                nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                 Blur(out_channel),
                 # EqualConv2d(in_channel, out_channel, kernel_size, padding=padding),
                 SpectralNorm(nn.Conv2d(in_channel, out_channel, kernel_size, padding=padding)),
@@ -306,7 +306,7 @@ class StyledUpBlock(nn.Module):
                 nn.LeakyReLU(0.2),
             )
         self.convup = nn.Sequential(
-                nn.Upsample(scale_factor=2, mode='bilinear'),
+                nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                 # EqualConv2d(out_channel, out_channel, kernel_size, padding=padding),
                 SpectralNorm(nn.Conv2d(out_channel, out_channel, kernel_size, padding=padding)),
                 nn.LeakyReLU(0.2),
@@ -489,7 +489,7 @@ class UNetDictFace(nn.Module):
         self.up2 = StyledUpBlock(ngf*4, ngf*2) #
         self.up3 = StyledUpBlock(ngf*2, ngf) #
         self.up4 = nn.Sequential( # 128
-            # nn.Upsample(scale_factor=2, mode='bilinear'),
+            # nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
             SpectralNorm(nn.Conv2d(ngf, ngf, 3, 1, 1)),
             # nn.BatchNorm2d(32),
             nn.LeakyReLU(0.2),
