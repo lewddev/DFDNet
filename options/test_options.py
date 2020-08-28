@@ -9,6 +9,8 @@ class TestOptions(BaseOptions):
         parser.add_argument('--phase', type=str, default='', help='train, val, test, etc')
         parser.add_argument('--ntest', type=int, default=float("inf"), help='# of test examples.')
         parser.add_argument('--working_dir', type=str, default='/content/drive/My drive', help='working directory (should have \'aligned\' subdirectory)')
+        parser.add_argument('--jpeg_quality', type=int, default=95, help='JPEG quality of result images (1-100)')
+        parser.add_argument('--tmp_dir', type=str, default='', help='copy file here before processing (if empty - do not copy)')
         parser.add_argument('--aspect_ratio', type=float, default=1.0, help='aspect ratio of result images')
         parser.add_argument('--which_epoch', type=str, default='latest', help='which epoch to load? set to latest to use latest cached model')
         parser.add_argument('--how_many', type=int, default=float("inf"), help='how many test images to run')

@@ -10,6 +10,7 @@ from data.image_folder import make_dataset
 import sys
 from util import util
 from DFLIMG.DFLJPG import DFLJPG
+import shutil
 
 OUT_RES = 512
 
@@ -48,11 +49,14 @@ if __name__ == '__main__':
 
     opt.gpu_ids = [0] # gpu id. if use cpu, set opt.gpu_ids = []
     WorkingDir = opt.working_dir
+    tmp_dir = opt.tmp_dir
+    if tmp_dir:
+        os.makedirs(tmp_dir, exist_ok=True)
     #OutputPath = opt.results_dir
     InputPath = os.path.join(WorkingDir,'aligned')
     OutputPath = os.path.join(WorkingDir,'aligned_dfdn')
-    if not os.path.exists(OutputPath):
-        os.makedirs(OutputPath)
+    os.makedirs(OutputPath, exist_ok=True)
+    jpeg_quality = opt.jpeg_quality
     model = create_model(opt)
     model.setup(opt)
     
@@ -69,9 +73,16 @@ if __name__ == '__main__':
         print('{} Restoring {}'.format(ProgressStr, ImgName))
         torch.cuda.empty_cache()
         
-        InputDflImg = DFLJPG.load(ImgPath)
+        if tmp_dir:
+            tmp_path = os.path.join(tmp_dir,ImgName)
+            shutil.copyfile(ImgPath, tmp_path)
+            work_path = tmp_path
+        else:
+            work_path = ImgPath
+        
+        InputDflImg = DFLJPG.load(work_path)
         if not InputDflImg or not InputDflImg.has_data():
-            print('\t################ No landmarks in file {}'.format(ImgPath))
+            print('\t################ No landmarks in file {}'.format(ImgName))
             continue
         Landmarks = InputDflImg.get_landmarks()
         InputData = InputDflImg.get_dict()
@@ -86,7 +97,7 @@ if __name__ == '__main__':
                 poly.set_points(poly.get_pts() * scale_factor)
         
         Part_locations = get_part_location(Landmarks)
-        A = Image.open(ImgPath).convert('RGB')
+        A = Image.open(work_path).convert('RGB')
         
         if Part_locations == 0:
             print('\t################ Error in landmarks, continue...')
@@ -98,7 +109,7 @@ if __name__ == '__main__':
         A = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(A)
         C = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(C)
         
-        data = {'A':A.unsqueeze(0), 'C':C.unsqueeze(0), 'A_paths': ImgPath,'Part_locations': Part_locations}
+        data = {'A':A.unsqueeze(0), 'C':C.unsqueeze(0), 'A_paths': work_path,'Part_locations': Part_locations}
 
         model.set_input(data)
         try:
@@ -108,18 +119,27 @@ if __name__ == '__main__':
             im_data = visuals['fake_A']
             im = util.tensor2im(im_data)
             image_pil = Image.fromarray(im)
-            image_pil.save(os.path.join(OutputPath,ImgName), quality=95)
+            if tmp_dir:
+                save_path = os.path.join(tmp_dir,'tmp'+ImgName)
+            else:
+                save_path = os.path.join(OutputPath,ImgName)
+            image_pil.save(save_path, quality=jpeg_quality)
             
         except Exception as e:
             print('\t################ Error enhancing {}'.format(str(e)))
+            os.remove(work_path)
             continue
         
-        OutputDflImg = DFLJPG.load(os.path.join(OutputPath,ImgName))
+        OutputDflImg = DFLJPG.load(save_path)
         OutputDflImg.set_dict(InputData)
         OutputDflImg.set_landmarks(Landmarks)
         if InputDflImg.has_seg_ie_polys():
             OutputDflImg.set_seg_ie_polys(xseg_polys)
         OutputDflImg.save()
+        if tmp_dir:
+            shutil.copyfile(save_path, os.path.join(OutputPath,ImgName))
+            os.remove(work_path)
+            os.remove(save_path)
 
     print('\nAll results are saved in {} \n'.format(OutputPath))
     
