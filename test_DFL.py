@@ -47,7 +47,7 @@ def get_part_location(lmrks):
 if __name__ == '__main__':
     opt = TestOptions().parse()
 
-    opt.gpu_ids = [0] # gpu id. if use cpu, set opt.gpu_ids = []
+    # opt.gpu_ids = [0] # gpu id. if use cpu, set opt.gpu_ids = []
     WorkingDir = opt.working_dir
     tmp_dir = opt.tmp_dir
     if tmp_dir:
