@@ -88,6 +88,7 @@ if __name__ == '__main__':
         InputData = InputDflImg.get_dict()
         
         # scale landmarks and xseg polys to output image size
+        OUT_RES = InputDflImg.get_shape()[0]
         scale_factor = OUT_RES / InputDflImg.get_shape()[0]
         # print('Scale factor: {}'.format(scale_factor))
         Landmarks = Landmarks * scale_factor
